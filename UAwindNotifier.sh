@@ -25,6 +25,8 @@ fi
 #write new save file
 echo "TIME_LAST_WIND=$TIME_LAST_WIND" > $SAVEFILE
 echo "TIME_LAST_B=$TIME_LAST_B" >> $SAVEFILE
+echo "LAST_K_WIND=$LAST_K_WIND" >> $SAVEFILE
+echo "LAST_B_WIND=$LAST_B_WIND" >> $SAVEFILE
 
 #get weather from eas website
 WEATHER="`wget -qO- http://easweb.eas.ualberta.ca/page/weather_stations`"
@@ -58,16 +60,23 @@ TIME_ELAPSED=$(expr $(date +%s) - $TIME_LAST_WIND)
 B_TIME_ELAPSED=$(expr $(date +%s) - $TIME_LAST_B)
 
 #calulate change in windspeed
-if [ -z $LAST_WIND ]; then
-   DELTA_WIND=
+if [ -n "$LAST_B_WIND" ]; then
+   DELTA_B_WIND=$(expr $WIND_INT - $LAST_B_WIND)
+else
+   DELTA_B_WIND=0
+fi
+if [ -n "$LAST_K_WIND" ]; then
+   DELTA_K_WIND=$(expr $WIND_INT - $LAST_K_WIND)
+else
+   DELTA_K_WIND=0
 fi
 
 #echo message to stdout
 date
 echo "Current Conditions: $TEMP C, $CONDITIONS
 Wind Speed: $WIND_INT km/h $WIND_DIR ($WIND_METERS_SEC m/s)"
-echo "Time elapsed since last kite notification: $TIME_ELAPSED sec"
-echo "Time elapsed since last badminton notification: $B_TIME_ELAPSED sec"
+echo "Deltas since last kite notification: $TIME_ELAPSED sec, $DELTA_K_WIND km/h"
+echo "Deltas since last badminton notification: $B_TIME_ELAPSED sec, $DELTA_B_WIND km/h"
 
 # if windspeed is in range and we haven't sent an email in a while, compose and send email
 if [ $TIME_ELAPSED -ge 3600 -a $RAINING == 0 ]; then
@@ -75,6 +84,8 @@ if [ $TIME_ELAPSED -ge 3600 -a $RAINING == 0 ]; then
       #record the last time we sent an email
       TIME_LAST_WIND=$(date +%s)
       echo "TIME_LAST_WIND=$TIME_LAST_WIND" >> $SAVEFILE
+      # save windspeed for next time
+      echo "LAST_K_WIND=$WIND_INT" >> $SAVEFILE
       #email info
       SUBJECT="Conditions Ripe for Kite Flying!"
       MAILTO=`cat $KITEMAILLIST`
@@ -94,6 +105,8 @@ if [ $B_TIME_ELAPSED -ge 3600 -a $RAINING == 0 ]; then
       #record the last time we sent an email
       TIME_LAST_B=$(date +%s)
       echo "TIME_LAST_B=$TIME_LAST_B" >> $SAVEFILE
+      # save windspeed for next time
+      echo "LAST_B_WIND=$WIND_INT" >> $SAVEFILE
       #email info
       SUBJECT="Conditions Prime for Badminton!"
       MAILTO=`cat $BMAILLIST`
@@ -107,5 +120,3 @@ if [ $B_TIME_ELAPSED -ge 3600 -a $RAINING == 0 ]; then
    fi
 fi
 
-# save windspeed for next time
-echo "LAST_WIND=$WIND_INT" >> $SAVEFILE
