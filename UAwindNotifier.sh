@@ -12,6 +12,8 @@ MIN_KPH=20
 # max windspeed for badminton notifications in km/h
 B_MAX_KPH=5
 B_MIN_TEMP=15
+# min time between notifications (s)
+EMAIL_INTERVAL=10800
 
 #load saved variables from file
 #determine working directory
@@ -37,7 +39,7 @@ WIND_INT=${WIND_KPH/.*}
 #parse wind direction
 WIND_DIR="`echo $WEATHER | grep -oP "Wind direction:.{40}" | sed -n 's/.*>\([A-Za-z]*\)<.*/\1/p'`"
 #parse temperature
-TEMP="`echo $WEATHER | grep -oP "Temperature:.{30}" | sed -n 's/.*>\([0-9]*\.[0-9]*\).*/\1/p'`"
+TEMP="`echo $WEATHER | grep -oP "Temperature:.{30}" | sed -n 's/.*>\([+-]\{0,1\}[0-9]*\.[0-9]*\).*/\1/p'`"
 TEMP_INT=${TEMP/.*}
 
 #get current conditions from Environment Canada (eg. Light Rain, Sunny, Cloudy)
@@ -79,7 +81,7 @@ echo "Deltas since last kite notification: $TIME_ELAPSED sec, $DELTA_K_WIND km/h
 echo "Deltas since last badminton notification: $B_TIME_ELAPSED sec, $DELTA_B_WIND km/h"
 
 # if windspeed is in range and we haven't sent an email in a while, compose and send email
-if [ $TIME_ELAPSED -ge 3600 -a $RAINING == 0 ]; then
+if [ $TIME_ELAPSED -ge $EMAIL_INTERVAL -a $RAINING == 0 ]; then
    if [ $MIN_KPH -le $WIND_INT -a $WIND_INT -le $MAX_KPH ]; then
       #record the last time we sent an email
       TIME_LAST_WIND=$(date +%s)
@@ -100,7 +102,7 @@ if [ $TIME_ELAPSED -ge 3600 -a $RAINING == 0 ]; then
 fi
 
 # if windspeed for badminton is in range and we haven't sent an email in a while, compose and send email
-if [ $B_TIME_ELAPSED -ge 3600 -a $RAINING == 0 ]; then
+if [ $B_TIME_ELAPSED -ge $EMAIL_INTERVAL -a $RAINING == 0 ]; then
    if [ $WIND_INT -le $B_MAX_KPH -a $B_MIN_TEMP -le $TEMP_INT ]; then
       #record the last time we sent an email
       TIME_LAST_B=$(date +%s)
